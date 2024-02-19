@@ -42,4 +42,4 @@ def main():
 
 
 if name == 'main':
-    main()￼Enter
+    main()
