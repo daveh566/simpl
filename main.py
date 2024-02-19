@@ -1,45 +1,40 @@
 import logging
-import telegram
+import telebot
 
 # Replace with your actual Telegram bot token
 BOT_TOKEN = "6733000714:AAG1Q6G_KxJqmQ535SyY1ftU-FoLnpXotyA"
 
-# Replace with a list of admin chat IDs
-ADMIN_CHAT_IDS = [5002238436, 987654321]
+# Replace with a list of admin chat IDs or usernames
+ADMIN_CHAT_IDS = ["5002238436", "admin2_username"]
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
+bot = telebot.TeleBot(BOT_TOKEN)
 
-def handle_request(update, context):
-    chat_id = update.effective_chat.id
-    user_id = update.message.from_user.id
-    username = update.message.from_user.username
+@bot.message_handler(commands=["request"])
+def handle_request(message):
+    """Handles the /request command from users."""
 
-    message_text = update.message.text.split(" ", 1)[1] if len(update.message.text.split()) > 1 else ""
+    user_id = message.chat.id
+    username = message.from_user.username or message.from_user.first_name
+    text = message.text.strip()
 
-    message = f"Request from: @{username} (ID: {user_id})\n"
-    message += f"Chat ID: {chat_id}\n"
-    message += f"Message: {message_text}"
+    # Extract request message after the command (if any)
+    request_message = text[len("/request"):].strip() or "Empty request message."
 
+    # Construct the message to send to admins
+    admin_message = f"Request from: {username} ({user_id})\n\n{request_message}"
+
+    # Send the message to each admin
     for admin_chat_id in ADMIN_CHAT_IDS:
         try:
-            context.bot.send_message(chat_id=admin_chat_id, text=message)
-        except telegram.error.TelegramError as e:
-            logging.error(f"Failed to send message to admin {admin_chat_id}: {e}")
+            bot.send_message(admin_chat_id, admin_message, parse_mode="Markdown")
+            logging.info(f"Successfully sent request to admin: {admin_chat_id}")
+        except Exception as e:
+            logging.error(f"Failed to send request to admin {admin_chat_id}: {e}")
 
-    update.message.reply_text("Your request has been sent to the admins.")
+    # Send a confirmation message to the user
+    bot.reply_to(message, "Your request has been sent to the admins.")
 
-
-def main():
-    updater = telegram.Updater(token=BOT_TOKEN)
-    dispatcher = updater.dispatcher
-
-    dispatcher.add_handler(telegram.CommandHandler("request", handle_request))
-
-    updater.start_polling()
-    updater.idle()
-
-
-if __name__ == 'main':
-    main()
+if __name__ == "main":
+    bot.polling()
