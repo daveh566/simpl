@@ -41,5 +41,5 @@ def main():
     updater.idle()
 
 
-if name == 'main':
+if __name__ == 'main':
     main()
